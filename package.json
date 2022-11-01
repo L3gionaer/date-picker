@@ -1,0 +1,22 @@
+{
+  "name": "date-time-picker",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/L3gionaer/date-time-picker.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/L3gionaer/date-time-picker/issues"
+  },
+  "homepage": "https://github.com/L3gionaer/date-time-picker#readme",
+  "dependencies": {
+    "http-server": "^14.1.1"
+  }
+}
