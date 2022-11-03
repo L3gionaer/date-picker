@@ -45,7 +45,7 @@ class Calendar extends EventEmitter {
           let day = new Day({dayCount, isCurrentDate});
           this.days.push(day);
 
-          if(dayAsDate >= new Date(2022, 9, [2])) {
+          if(dayAsDate >= new Date()) {
             day.on("click", day => this.emit("clickOnDay", day));
             day.on("mouseover", day => this.emit("mouseOverDay", day));
             day.on("mouseleave", day => this.emit("mouseLeaveDay", day));

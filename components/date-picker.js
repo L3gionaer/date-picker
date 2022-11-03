@@ -3,25 +3,58 @@ import Arrows from './arrows.js';
 //import Calendar from './calendar/calendar.js';
 import createCalendar from './calendar/create-calendar.js';
 import EventEmitter from '../event-emitter.js';
-import { getDateAsISO } from '../helpers/date.js';
+import { getDateAsISO, getMonthFormatted } from '../helpers/date.js';
 
 class DatePicker extends EventEmitter {
     constructor({ year, month }) {
         super();
 
         this.year = year;
-        this.month = month;
+        this._month = month;
 
         this.component;
         this.text;
         this.calendar;
         this.calendarContainer;
 
-        this.startDate;
-        this.endDate;
-        //this.selectedDays;
+        this._startDate;
+        this._endDate;
 
         this._init();
+    }
+
+    get month() {
+        return this._month;
+    }
+
+    set month(number) {
+        if(this.month == 0) {
+            this.month = 11;
+            this.year = this.year - 1;
+        } else {
+            this.month = number;
+        }
+    }
+
+    get startDate() {
+        return this._startDate;
+    }
+
+    set startDate(date) {
+        this._stateDate = date;
+        this._endDate = null;
+
+        this.emit("startDateChanged", this.startDate);
+    }
+
+    get endDate() {
+        return this._startDate;
+    }
+
+    set endDate(date) {
+        this._stateDate = date;
+
+        this.emit("endDateChanged", this.startDate);
     }
 
     _init() {
@@ -31,11 +64,11 @@ class DatePicker extends EventEmitter {
     _render() {
         this.component = document.createElement("div");
 
-        this.text = new Text({textContent: `${this.month}, ${this.year}`});
+        this.text = new Text({textContent: `${getMonthFormatted(this.month)}, ${this.year}`});
 
         const arrows = new Arrows();
-        arrows.on("clickPrevious", () => this.previousMonth());
-        arrows.on("clickNext", () => this.nextMonth());
+        arrows.on("clickPrevious", () => this.changeMonth(-1));
+        arrows.on("clickNext", () => this.changeMonth(1));
 
         const header = document.createElement("div");
         header.style.display = "flex"; //remove
@@ -64,27 +97,10 @@ class DatePicker extends EventEmitter {
         this.calendarContainer.replaceChildren(this.calendar.component);
     }
 
-    previousMonth() {
-        this.month -= 1;
+    changeMonth(amount) {
+        this.month += amount;
 
-        if(this.month == 1) {
-            this.month = 12;
-            this.year = this.year - 1;
-        }
-
-        this.text.setText(`${this.month}, ${this.year}`);
-        this.addCalendar();
-    }
-
-    nextMonth() {
-        this.month += 1;
-
-        if(this.month == 12) {
-            this.month = 1;
-            this.year = this.year + 1;
-        }
-
-        this.text.setText(`${this.month}, ${this.year}`);
+        this.text.setText(`${getMonthFormatted(this.month)}, ${this.year}`);
         this.addCalendar();
     }
 
@@ -93,14 +109,12 @@ class DatePicker extends EventEmitter {
         
         if(this.startDate) {
             if(this.endDate) {
-                if(selectedDate >= new Date(2022, 9, [2])) {
-                    this.calendar.days.forEach((_, index) => this.calendar.days[index].deselect.call(this.calendar.days[index]));
+                if(selectedDate >= new Date()) {
+                    this.deselectAllDays();
+                    
                     day.select();
-                    //this.calendar.days[this.startDate.getDate() - 1].deselect.call(this.calendar.days[this.startDate.getDate() - 1]);
-                    //this.calendar.days[this.endDate.getDate() - 1].deselect.call(this.calendar.days[this.endDate.getDate() - 1]);
 
                     this.startDate = selectedDate;
-                    this.endDate = null;
                 }
             } else {
                 if(selectedDate >= this.startDate) {
@@ -108,8 +122,7 @@ class DatePicker extends EventEmitter {
 
                     this.endDate = selectedDate;
                 } else {
-                    //this.calendar.days[this.startDate.getDate() - 1].deselect.call(this.calendar.days[this.startDate.getDate() - 1]);
-                    this.calendar.days.forEach((_, index) => this.calendar.days[index].deselect.call(this.calendar.days[index]));
+                    this.deselectAllDays();
                     
                     day.select();
 
@@ -117,15 +130,20 @@ class DatePicker extends EventEmitter {
                 }
             }
         } else {
-            if(selectedDate >= new Date(2022, 9, [2])) {
+            if(selectedDate >= new Date()) {
                 day.select();
 
                 this.startDate = selectedDate;
             }
         }
-        
     }
 
+    deselectAllDays() {
+        this.calendar.days.forEach((_, index) => { 
+            this.calendar.days[index].deselect.call(this.calendar.days[index])
+        });
+    }
+    //Look here
     mouseOverDay(day) {
         if(
             (this.startDate && !this.endDate) && 
@@ -133,10 +151,10 @@ class DatePicker extends EventEmitter {
         ) {
             console.log("this");
             this.calendar.days.forEach((_, index) => {
-                const date = new Date(this.year, this.month, [(index + 1)]);
+                const date = new Date(this.year, this.month, [(index + 1)]); // dateOfThisDay -> var name
                 const dateWithoutTime = getDateAsISO(date);
                 
-                // dateOfThisDay -> var name
+                
                 if(
                     dateWithoutTime != getDateAsISO(this.startDate) && 
                     //dateWithoutTime != getDateAsISO(this.endDate) && 
