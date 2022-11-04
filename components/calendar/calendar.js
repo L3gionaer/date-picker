@@ -1,88 +1,75 @@
-import EventEmitter from "../../event-emitter.js";
-import { getDateAsISO } from "../../helpers/date.js";
+import EventEmitter from '../../event-emitter.js';
 
-import Day from './day.js';
+import Text from '../text.js';
+import Arrows from '../arrows.js';
 
 class Calendar extends EventEmitter {
-  constructor({ year, month }) {
-    super();
+    constructor({year, startMonth}) {
+        this.year = year;
+        this._month = startMonth;
 
-    this.component;
-
-    this.year = year;
-    this.month = month;
-
-    this.days = [];
-
-    this._init();
-  }
-
-  _init() {
-    this.firstDayOfMonth = new Date(this.year, this.month, 1).getDay() || 7;
-    this.daysOfMonth = new Date(this.year, this.month + 1, 0).getDate();
-
-    this._render();
-  }
-
-  _render() {
-    this.component = document.createElement("div");
-    this.component.classList.add("month");
-
-    const table = document.createElement("table");
-
-    for (let r = 0; r < 6; r++) {
-      let row = document.createElement("tr");
-
-      for (let c = 0; c < 7; c++) {
-        let count = c + r * 7;
-        let dayCount = count + 1 - this.firstDayOfMonth + 1;
-
-        if (dayCount > 0 && dayCount <= this.daysOfMonth) {
-          const dayAsDate = new Date(this.year, this.month, [dayCount]);
-
-          const isCurrentDate = getDateAsISO(dayAsDate) === getDateAsISO(new Date());
-
-          let day = new Day({dayCount, isCurrentDate});
-          this.days.push(day);
-
-          if(dayAsDate >= new Date()) {
-            day.on("click", day => this.emit("clickOnDay", day));
-            day.on("mouseover", day => this.emit("mouseOverDay", day));
-            day.on("mouseleave", day => this.emit("mouseLeaveDay", day));
-          } else {
-            day.disable();
-          }
-          
-          row.append(day.component);
-        } else {
-          let placeHolder = document.createElement("td");
-          placeHolder.textContent = "+";
-
-          row.append(placeHolder);
-        }
-      }
-
-      table.append(row);
+        _init();
     }
 
-    this.component.append(table);
-  }
+    _init() {
+        this._render();
+    }
 
-  /*onClick(day) {
-    //const selectedDay = parseInt(e.currentTarget.dataset.day);
-    const selectedDate = new Date(this.year, this.month, [day.dayCount]);
+    get month() {
+        return this._month;
+    }
 
-    this.days[day.dayCount].selectDay(true);
-    console.log("day", day);
+    set month(number) {
+        if(this.month == 0) {
+            this.month = 11;
+            this.year = this.year - 1;
+        } else {
+            this.month = number;
+        }
+    }
 
-    this.emit("mouseOverDate", selectedDate);
-  }
+    _render() {
+        this.component = document.createElement("div");
 
-  onMouseOver(day) {
-    //const selectedDate = new Date(this.year, this.month, [day.dayCount]);
+        this.text = new Text({textContent: `${getMonthFormatted(this.month)}, ${this.year}`});
 
-    this.emit("mouseOverDate", day);
-  }*/
+        const arrows = new Arrows();
+        arrows.on("clickPrevious", () => this.changeMonth(-1));
+        arrows.on("clickNext", () => this.changeMonth(1));
+
+        const header = document.createElement("div");
+        header.style.display = "flex"; 
+        header.append(this.text.component);
+        header.append(arrows.component);
+
+        this.calendarContainer = document.createElement("div");
+        this._renderCalendar();
+        
+        this.component.append(header);
+        this.component.append(this.calendarContainer);
+    }
+
+    _renderCalendar() {
+        this.calendar = createCalendar({
+            year: this.year, 
+            month: this.month, 
+            startDate: this.startDate, 
+            endDate: this.endDate
+        });
+
+        this.calendar.on("clickOnDay", (day) => this.selectDay(day));
+        this.calendar.on("mouseOverDay", (day) => this.mouseOverDay(day));
+        this.calendar.on("mouseLeaveDay", (day) => this.mouseLeaveDay(day));
+
+        this.calendarContainer.replaceChildren(this.calendar.component);
+    }
+
+    changeMonth(number) {
+        this.month += number;
+
+        this.text.setText(`${getMonthFormatted(this.month)}, ${this.year}`);
+        this._renderCalendar();
+    }
 }
 
 export default Calendar;

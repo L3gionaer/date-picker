@@ -1,4 +1,4 @@
-import Calendar from "./calendar.js";
+import Calendar from "./month.js";
 import { getDateAsISO } from '../../helpers/date.js'
 
 function createCalendar({year, month, startDate, endDate}) {
