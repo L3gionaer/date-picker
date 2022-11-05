@@ -5,14 +5,21 @@ import Arrows from '../arrows.js';
 
 class Calendar extends EventEmitter {
     constructor({year, startMonth}) {
-        this.year = year;
+        this._year = year;
         this._month = startMonth;
 
-        _init();
+        this.component;
+        //this.monthComponent;
+
+        this._init();
     }
 
     _init() {
         this._render();
+    }
+
+    get year() {
+        return this._year;
     }
 
     get month() {
@@ -22,10 +29,12 @@ class Calendar extends EventEmitter {
     set month(number) {
         if(this.month == 0) {
             this.month = 11;
-            this.year = this.year - 1;
+            this._year = this._year - 1;
         } else {
             this.month = number;
         }
+
+        this.monthChanged();
     }
 
     _render() {
@@ -64,9 +73,7 @@ class Calendar extends EventEmitter {
         this.calendarContainer.replaceChildren(this.calendar.component);
     }
 
-    changeMonth(number) {
-        this.month += number;
-
+    monthChanged() {
         this.text.setText(`${getMonthFormatted(this.month)}, ${this.year}`);
         this._renderCalendar();
     }

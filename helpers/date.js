@@ -32,3 +32,12 @@ export const getMonthFormatted = (month) => {
     return month;
 }
 
+export const compareTwoDates = (date1, date2) => {
+    date1.setHours(0, 0, 0, 0);
+    date2.setHours(0, 0, 0, 0);
+
+    const result = date1.getTime() == date2.getTime()
+
+    return result;
+}
+

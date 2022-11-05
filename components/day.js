@@ -1,4 +1,4 @@
-import EventEmitter from "../../event-emitter.js";
+import EventEmitter from "../event-emitter.js";
 
 // is Current Date? Auslagern
 

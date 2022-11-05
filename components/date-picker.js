@@ -1,111 +1,132 @@
 import Text from './text.js';
 import Arrows from './arrows.js';
-//import Calendar from './calendar/calendar.js';
-import createCalendar from './calendar/create-calendar.js';
+
+import createCalendar from './create-calendar.js';
 import EventEmitter from '../event-emitter.js';
-import { getDateAsISO, getMonthFormatted } from '../helpers/date.js';
+import { getMonthFormatted, compareTwoDates } from '../helpers/date.js';
 
 class DatePicker extends EventEmitter {
+    #year;
+    #month;
+    #component;
+    #text;
+    #calendar;
+    #calendarContainer;
+    #startDate;
+    #endDate;
+
+
     constructor({ year, month }) {
         super();
 
-        this.year = year;
-        this._month = month;
+        this.#year = year;
+        this.#month = month;
 
-        this.component;
-        this.text;
-        this.calendar;
-        this.calendarContainer;
+        this.#component;
+        this.#text;
+        this.#calendar;
+        this.#calendarContainer;
 
-        this._startDate;
-        this._endDate;
+        this.#startDate;
+        this.#endDate;
 
-        this._init();
+        this.#init();
+    }
+
+    get year() {
+        return this.#year;
     }
 
     get month() {
-        return this._month;
+        return this.#month;
     }
 
     set month(number) {
         if(this.month == 0) {
-            this.month = 11;
-            this.year = this.year - 1;
+            this.#month = 11;
+            this.#year = this.#year - 1;
         } else {
-            this.month = number;
+            this.#month = number;
         }
     }
 
-    get startDate() {
-        return this._startDate;
+    get component() {
+        return this.#component;
     }
 
-    set startDate(date) {
-        this._stateDate = date;
-        this._endDate = null;
-
-        this.emit("startDateChanged", this.startDate);
+    get startDate() {
+        return this.#startDate;
     }
 
     get endDate() {
-        return this._startDate;
+        return this.#endDate;
     }
 
-    set endDate(date) {
-        this._stateDate = date;
-
-        this.emit("endDateChanged", this.startDate);
+    #init() {
+        this.#render();
+        this.#registerListeners();
     }
 
-    _init() {
-        this._render();
-    }
+    #render() {
+        this.#component = document.createElement("div");
 
-    _render() {
-        this.component = document.createElement("div");
-
-        this.text = new Text({textContent: `${getMonthFormatted(this.month)}, ${this.year}`});
+        this.#text = new Text({textContent: `${getMonthFormatted(this.month)}, ${this.#year}`});
 
         const arrows = new Arrows();
-        arrows.on("clickPrevious", () => this.changeMonth(-1));
-        arrows.on("clickNext", () => this.changeMonth(1));
+        arrows.on("clickPrevious", () => this.emit("monthChange", -1));
+        arrows.on("clickNext", () => this.emit("monthChange", 1));
 
         const header = document.createElement("div");
         header.style.display = "flex"; //remove
-        header.append(this.text.component);
+        header.append(this.#text.component);
         header.append(arrows.component);
 
-        this.calendarContainer = document.createElement("div");
-        this.addCalendar();
+        this.#calendarContainer = document.createElement("div");
+        this.#renderCalendar();
         
-        this.component.append(header);
-        this.component.append(this.calendarContainer);
+        this.#component.append(header);
+        this.#component.append(this.#calendarContainer);
     }
 
-    addCalendar() {
-        this.calendar = createCalendar({
-            year: this.year, 
+    #registerListeners() {
+        this.on("monthChange", number => this.#onMonthChange.call(this, number));
+        this.on("startDateChange", date => this.#onStartDateChange.call(this, date));
+        this.on("endDateChange", date => this.#onEndDateChange.call(this, date));
+    }
+
+    #renderCalendar() {
+        this.#calendar = createCalendar({
+            year: this.#year, 
             month: this.month, 
             startDate: this.startDate, 
             endDate: this.endDate
         });
 
-        this.calendar.on("clickOnDay", (day) => this.selectDay(day));
-        this.calendar.on("mouseOverDay", (day) => this.mouseOverDay(day));
-        this.calendar.on("mouseLeaveDay", (day) => this.mouseLeaveDay(day));
+        this.#calendar.on("clickOnDay", (day) => this.selectDay(day));
+        this.#calendar.on("mouseOverDay", (day) => this.mouseOverDay(day));
+        this.#calendar.on("mouseLeaveDay", (day) => this.mouseLeaveDay(day));
 
-        this.calendarContainer.replaceChildren(this.calendar.component);
+        this.#calendarContainer.replaceChildren(this.#calendar.component);
     }
 
-    changeMonth(amount) {
-        this.month += amount;
+    #onMonthChange(number) {
+        this.month += number;
 
-        this.text.setText(`${getMonthFormatted(this.month)}, ${this.year}`);
-        this.addCalendar();
+        this.#text.setText(`${getMonthFormatted(this.month)}, ${this.#year}`);
+        this.#renderCalendar();
+    }
+
+    #onStartDateChange(date) {
+        this.#startDate = date;
+        this.#endDate = null;
+    }   
+
+    #onEndDateChange(date) {
+        this.#endDate = date;
     }
 
     selectDay(day) {
-        const selectedDate = new Date(this.year, this.month, [day.dayCount]);
+        const selectedDate = new Date(this.#year, this.month, [day.dayCount]);
         
         if(this.startDate) {
             if(this.endDate) {
@@ -114,57 +135,56 @@ class DatePicker extends EventEmitter {
                     
                     day.select();
 
-                    this.startDate = selectedDate;
+                    this.emit("startDateChange", selectedDate);
                 }
             } else {
                 if(selectedDate >= this.startDate) {
                     day.select();
 
-                    this.endDate = selectedDate;
+                    this.emit("endDateChange", selectedDate);
                 } else {
                     this.deselectAllDays();
                     
                     day.select();
 
-                    this.startDate = selectedDate;
+                    this.emit("startDateChange", selectedDate);
                 }
             }
         } else {
             if(selectedDate >= new Date()) {
                 day.select();
 
-                this.startDate = selectedDate;
+                this.emit("startDateChange", selectedDate);
             }
         }
     }
 
     deselectAllDays() {
-        this.calendar.days.forEach((_, index) => { 
-            this.calendar.days[index].deselect.call(this.calendar.days[index])
+        this.#calendar.days.forEach((_, index) => { 
+            this.#calendar.days[index].deselect.call(this.#calendar.days[index])
         });
     }
-    //Look here
+    
     mouseOverDay(day) {
         if(
             (this.startDate && !this.endDate) && 
-            (this.startDate < new Date(this.year, this.month, [day.dayCount]))
+            (this.startDate < new Date(this.#year, this.month, [day.dayCount]))
         ) {
-            console.log("this");
-            this.calendar.days.forEach((_, index) => {
-                const date = new Date(this.year, this.month, [(index + 1)]); // dateOfThisDay -> var name
-                const dateWithoutTime = getDateAsISO(date);
-                
-                
+            this.#calendar.days.forEach((_, index) => {
+                const dateOfThisDay = new Date(this.#year, this.month, [(index + 1)]); 
+               
                 if(
-                    dateWithoutTime != getDateAsISO(this.startDate) && 
-                    //dateWithoutTime != getDateAsISO(this.endDate) && 
-                    dateWithoutTime != getDateAsISO(new Date())
+                    !compareTwoDates(dateOfThisDay, this.startDate) && 
+                    !compareTwoDates(dateOfThisDay, new Date())
                 ) { 
-                    this.calendar.days[index].component.style.backgroundColor = "transparent";
+                    this.#calendar.days[index].deselect(); 
                 }
 
-                if(date > this.startDate && date < new Date(this.year, this.month, [day.dayCount])) {
-                    this.calendar.days[index].selectBetween();
+                if(
+                    (dateOfThisDay > this.startDate) && 
+                    (dateOfThisDay < new Date(this.#year, this.month, [day.dayCount]))
+                ) {
+                    this.#calendar.days[index].selectBetween();
                 } 
             })
         } else {

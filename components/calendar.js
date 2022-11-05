@@ -4,29 +4,39 @@ import { getDateAsISO } from "../../helpers/date.js";
 import Day from './day.js';
 
 class Calendar extends EventEmitter {
+  #component;
+  #year;
+  #month;
+  #firstDayOfMonth;
+  #daysOfMonth;
+
   constructor({ year, month }) {
     super();
 
-    this.component;
+    this.#component;
 
-    this.year = year;
-    this.month = month;
+    this.#year = year;
+    this.#month = month;
 
     this.days = [];
 
-    this._init();
+    this.#init();
   }
 
-  _init() {
-    this.firstDayOfMonth = new Date(this.year, this.month, 1).getDay() || 7;
-    this.daysOfMonth = new Date(this.year, this.month + 1, 0).getDate();
-
-    this._render();
+  get component() {
+    return this.#component;
   }
 
-  _render() {
-    this.component = document.createElement("div");
-    this.component.classList.add("month");
+  #init() {
+    this.#firstDayOfMonth = new Date(this.#year, this.#month, 1).getDay() || 7;
+    this.#daysOfMonth = new Date(this.#year, this.#month + 1, 0).getDate();
+
+    this.#render();
+  }
+
+  #render() {
+    this.#component = document.createElement("div");
+    this.#component.classList.add("month");
 
     const table = document.createElement("table");
 
@@ -35,10 +45,10 @@ class Calendar extends EventEmitter {
 
       for (let c = 0; c < 7; c++) {
         let count = c + r * 7;
-        let dayCount = count + 1 - this.firstDayOfMonth + 1;
+        let dayCount = count + 1 - this.#firstDayOfMonth + 1;
 
-        if (dayCount > 0 && dayCount <= this.daysOfMonth) {
-          const dayAsDate = new Date(this.year, this.month, [dayCount]);
+        if (dayCount > 0 && dayCount <= this.#daysOfMonth) {
+          const dayAsDate = new Date(this.#year, this.#month, [dayCount]);
 
           const isCurrentDate = getDateAsISO(dayAsDate) === getDateAsISO(new Date());
 
@@ -65,24 +75,8 @@ class Calendar extends EventEmitter {
       table.append(row);
     }
 
-    this.component.append(table);
+    this.#component.append(table);
   }
-
-  /*onClick(day) {
-    //const selectedDay = parseInt(e.currentTarget.dataset.day);
-    const selectedDate = new Date(this.year, this.month, [day.dayCount]);
-
-    this.days[day.dayCount].selectDay(true);
-    console.log("day", day);
-
-    this.emit("mouseOverDate", selectedDate);
-  }
-
-  onMouseOver(day) {
-    //const selectedDate = new Date(this.year, this.month, [day.dayCount]);
-
-    this.emit("mouseOverDate", day);
-  }*/
 }
 
 export default Calendar;
